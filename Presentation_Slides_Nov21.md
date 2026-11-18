@@ -1,90 +1,75 @@
-# 10-Minute Presentation Slides Outline (Saturday, Nov 21, 2026)
+# 10-Minute Presentation Slides & Speaker Guide (Saturday, Nov 21, 2026)
 
 **Course:** Advanced NLP (Prof. Nagwa El-Makky)  
 **Format:** 10 minutes presentation + 5 minutes Q&A  
-**Required Topics Covered (per Nov 16 email):**
-1. The Problem (SemEval-2027 Task 11: VAKRA-Advanced)
-2. Brief Summary of the Baseline Paper (*VAKRA*, Naik et al., 2026)
-3. Concise SOTA Comparison (5+ Recent Papers)
-4. Our Core Idea & Architecture (**PV-VAKRA**)
-5. Techniques & Neural Models Used
-6. Dataset(s) & Preprocessing
-7. Quantitative Performance Evaluation Metrics & Baseline Targets
+**Project Objective:** Build an autonomous tool-calling agent (**PV-VAKRA**) to solve the **two core VAKRA multi-hop reasoning tasks** (Task 1: Multi-Hop Structured API Reasoning [API Chaining, Tool Selection, Multi-Hop Execution] and Task 2: Multi-Hop, Multi-Source Reasoning across APIs + Documents under Tool-Use Policies) and evaluate it on the official VAKRA benchmark.
 
 ---
 
 ## Slide 1: Title Slide (0:00 – 0:30)
-* **Title:** Plan-and-Verify Agent with Schema-Grounded Tool Retrieval and Policy Guardrails for VAKRA-Advanced (SemEval-2027 Task 11)
+* **Title:** Building a Plan-and-Verify Agent with Schema-Grounded Tool Retrieval and Policy Guardrails for VAKRA-Advanced (SemEval-2027 Task 11)
 * **Team Members:** [Team Member 1] & [Team Member 2]
 * **Supervisor:** Prof. Nagwa El-Makky
 
 ---
 
-## Slide 2: The Problem — Multi-Hop, Multi-Source Tool Calling (0:30 – 2:00)
-* **Real-World Challenge:** Enterprise AI agents cannot just make isolated 1-step API calls; they must:
-  1. Select tools from **thousands of candidate APIs** (**Subtask 2: Tool Selection**).
-  2. Compose sequential/nested API pipelines (**Subtask 1: API Chaining**).
-  3. Reason across **3 to 7 dependent hops** where output JSON fields parameterize downstream tools (**Subtask 3: Multi-Hop API Reasoning**).
-  4. Combine **structured APIs** with **unstructured document RAG** while obeying **strict natural-language tool-use policies** (**Subtask 4: Multi-Hop, Multi-Source Reasoning**).
-* **Illustrative Example:** Finding a lead auditor's name in a compliance PDF $\rightarrow$ resolving their employee/department ID via HR lookup API $\rightarrow$ checking policy rules before querying restricted financial/payroll endpoints.
+## Slide 2: The Problem — Building an Agent for VAKRA-Advanced (0:30 – 2:00)
+* **Our Goal:** Build an autonomous agent (`PV-VAKRA`) that solves two core multi-hop reasoning tasks and is evaluated on the VAKRA benchmark ($8,000+$ live Python APIs across $62$ domains + RAG corpora):
+  1. **Task 1 — Multi-Hop Structured API Reasoning:**
+     * *Subtask 1 (API Chaining):* Sequential & nested Business Intelligence API calls.
+     * *Subtask 2 (Tool Selection):* Selecting gold APIs from $150+$ candidates per domain slice.
+     * *Subtask 3 (Multi-Hop API Reasoning):* $3\text{--}7$ dependent hops passing intermediate JSON outputs as downstream parameters.
+  2. **Task 2 — Multi-Hop, Multi-Source Reasoning under Policies:**
+     * *Subtask 4:* Combining structured APIs + unstructured document RAG while strictly obeying natural-language tool-use policies.
 
 ---
 
-## Slide 3: Baseline Paper Summary — VAKRA (Naik et al., 2026) (2:00 – 3:45)
-* **Paper:** *VAKRA: Evaluating Multi-Hop Reasoning Across APIs and Retrieval Under Tool-Use Policies* (IBM Research, `arXiv:2608.12282`).
-* **Key Contributions:**
-  * **Executable Environment:** 8,000+ locally hosted Python APIs across 62 domains + domain-aligned RAG corpora.
-  * **Trace-Level Replay Evaluator:** Re-executes predicted trajectories against live backend databases rather than relying on static string matching or LLM-as-a-judge.
-* **Key Baseline Findings (Standardized ReAct Harness):**
-  * Single-hop query-aligned APIs: **70.4%** accuracy.
-  * Compositional Business Intelligence APIs: drops to **50%–51%**.
-  * Multi-hop chains (3–7 steps): drops by **>50%**.
-  * Policy-constrained / unanswerable queries: collapses to **2.4%**.
-* **Core Insight:** Failures are rarely syntax errors; they stem from **entity disambiguation across sources**, **schema mapping**, and **policy instruction-forgetting**.
+## Slide 3: Baseline Paper Summary — VAKRA ReAct Agent (Naik et al., 2026) (2:00 – 3:45)
+* **Paper:** *VAKRA: Evaluating Multi-Hop Reasoning Across APIs and Retrieval Under Tool-Use Policies* (`arXiv:2608.12282`).
+* **Official Baseline Agent:** Standard greedy **ReAct** loop ($\text{Thought}_k \rightarrow \text{Action}(t_k, a_k) \rightarrow \text{Observation}(o_k)$) paired with dense retrieval and system-prompt policy conditioning.
+* **Trace-Level Replay Evaluator:** Re-executes predicted trajectories against live SQLite databases and RAG indexes (`Exec-Acc`).
+* **Baseline ReAct Bottlenecks:**
+  * Single-Hop APIs: **70.4%** $\rightarrow$ Compositional BI Chaining: **50%–51%** $\rightarrow$ Task 1 ($3\text{--}7$ Hops): **>50% drop** $\rightarrow$ Task 2 (Policy Unanswerable): **2.4%**.
+  * Fails due to **lack of bridge-tool lookahead**, **RAG-to-SQL entity mismatches**, and **policy instruction-forgetting**.
 
 ---
 
-## Slide 4: Concise SOTA Survey & Research Gap (3:45 – 5:15)
-* **6 Recent Papers Surveyed (2024–2026):**
-  1. **VAKRA (2026):** 8,000+ APIs + RAG + Policies; greedy ReAct struggles on depth & policies.
-  2. **Live API-Bench (EACL 2026):** 2,500+ BIRD-SQL APIs (SLOT/SEL/REST); no unstructured RAG or policies.
-  3. **ToolLLM / ToolBench (ICLR 2024):** Dense Retriever + DFSDT tree search over 16k RapidAPIs; flat retrieval misses intermediate bridge tools.
-  4. **AnyTool (ICML 2024):** Hierarchical Category$\rightarrow$Tool retriever + self-reflection; high multi-agent overhead, no cross-source entity grounding.
-  5. **$\tau$-bench (2024):** Policy-constrained retail/airline dialogues; small toolsets (<20 tools).
-  6. **Gorilla (NeurIPS 2024) & Re-Invoke (EMNLP 2024):** Synthetic query rewriting & AST execution; single-turn focus.
-* **The Research Gap:** No existing system jointly addresses (a) **schema-graph retrieval of intermediate bridge APIs**, (b) **explicit entity linking between RAG text and SQL-backed APIs**, and (c) **pre-execution policy verification**.
+## Slide 4: Concise SOTA Survey of 6 Tool-Calling Agent Architectures (3:45 – 5:15)
+* **6 Recent Agent Architectures Surveyed (2023–2026):**
+  1. **ReAct Baseline Agent (Yao et al., 2023; Naik et al., 2026):** Greedy 1-step horizon; fails on $3\text{--}7$ hops ($>50\%$ drop) and unanswerable policy queries ($2.4\%$).
+  2. **ToolLLM / DFSDT Agent (Qin et al., ICLR 2024):** Dense API Retriever + Depth-First Search Decision Tree; flat retrieval misses intermediate bridge tools.
+  3. **AnyTool (Du et al., ICML 2024):** 3-Tier Hierarchical Category$\rightarrow$Tool Agent + Self-Reflective Solver; high multi-agent overhead, no cross-source entity linking or pre-execution policy check.
+  4. **ReWOO (Xu et al., 2023/2024):** Decoupled Planner (symbolic DAG `#E1`$\rightarrow$`#E2`) + Worker + Solver; static open-loop plan breaks when intermediate RAG outputs require dynamic entity resolution.
+  5. **LATS (Zhou et al., ICML 2024):** Monte Carlo Tree Search (MCTS) + Value Function + Reflection; prohibitive rollout cost ($10\text{--}30\times$ calls per query).
+  6. **Re-Invoke (EMNLP 2024) & Gorilla (NeurIPS 2024):** Synthetic query rewriting & retriever-aware fine-tuning; retrieves tools matching explicit prompt sub-queries, missing implicit bridge APIs.
 
 ---
 
-## Slide 5: Our Idea — The PV-VAKRA Architecture (5:15 – 7:00)
-* **Core Hypothesis:** Replacing greedy ReAct with a **4-Stage Plan-and-Verify Pipeline** will directly eliminate VAKRA's three main failure modes:
-  1. **Stage 1 — Query & Policy Decomposer:** Splits complex queries into atomic sub-goals $\{q_1, \dots, q_m\}$ and parses policy $\mathcal{P}$ into formal pre-conditions $\{c_1, \dots, c_L\}$.
-  2. **Stage 2 — Schema-Graph Hybrid Retriever:** Combines BM25 + Dense Embeddings with 1-hop expansion on a pre-computed **API Input-Output Compatibility Graph $\mathcal{G}(\mathcal{T}, \mathcal{E})$** to discover intermediate bridge APIs.
-  3. **Stage 3 — Entity-Grounded DAG Controller:** Maintains a structured **Entity Scratchpad $\mathcal{M}_k$** that resolves unstructured text mentions into canonical database IDs before downstream calls.
-  4. **Stage 4 — Pre/Post-Execution Policy & Schema Guardrail:** Audits every proposed tool call $(t_k, a_k)$ against policy $\mathcal{P}$ and schema types; triggers local backtracking or safe abstention on restricted queries.
+## Slide 5: Our Proposed Agent Architecture — PV-VAKRA (5:15 – 7:00)
+* **4-Module Agent Pipeline:**
+  1. **Module 1 — Intent & Policy Decomposer:** Decomposes query $q$ into atomic sub-goals $\{q_1, \dots, q_m\}$ and parses policy $\mathcal{P}$ into formal rules $\{c_1, \dots, c_L\}$.
+  2. **Module 2 — Schema-Graph Hybrid Tool Retriever (for Task 1):** Combines BM25 + Dense Embeddings with 1-hop expansion on a pre-computed **Schema Compatibility Graph $\mathcal{G}(\mathcal{T}, \mathcal{E})$** to discover intermediate bridge APIs.
+  3. **Module 3 — Adaptive DAG Executor & Entity Scratchpad (for Tasks 1 & 2):** Builds a symbolic DAG (ReWOO style) while maintaining a structured **Entity Scratchpad $\mathcal{M}_k$** that resolves RAG text mentions into canonical SQL database IDs via lookup APIs.
+  4. **Module 4 — Pre/Post-Execution Policy Guardrail Verifier (for Task 2):** Audits every proposed tool call $(t_k, a_k)$ against policy rules $\{c_l\}$ before execution; triggers local DFSDT-style backtracking ($B \le 2$) or safe abstention.
 
 ---
 
-## Slide 6: Models, Techniques & Implementation Plan (7:00 – 8:15)
-* **Pretrained Models Used:**
-  * *Retriever & Reranker:* `BAAI/bge-large-en-v1.5` (or `Qwen3-Embedding`) + BM25 + `bge-reranker-v2-m3`.
-  * *Agent Backbone LLMs:* Open-weight tool-calling LLMs (`Qwen2.5-14B/32B-Instruct`, `Llama-3.3-70B-Instruct`).
-  * *Stretch Goal:* Direct Preference Optimization (DPO) on `Qwen2.5-7B-Instruct` using verified vs. policy-violating execution traces.
-* **Original Modules Implemented by Our Team:**
-  1. Automated **API Input-Output Compatibility Graph Builder** across all 8,000+ Python docstrings/schemas.
-  2. **Entity-Grounded DAG Executor** with structured cross-source scratchpad memory.
-  3. **Policy Entailment Verifier** & backtracking controller.
+## Slide 6: Techniques, Neural Models & Original Implementation (7:00 – 8:15)
+* **Neural Models Used:**
+  * *Retriever & Reranker:* `BAAI/bge-large-en-v1.5` + BM25 + `bge-reranker-v2-m3`.
+  * *Agent Backbone LLMs:* `Qwen2.5-14B/32B-Instruct`, `Llama-3.3-70B-Instruct` (+ stretch goal DPO on `Qwen2.5-7B-Instruct`).
+* **Original Agent Modules Implemented From Scratch by Our Team:**
+  1. Automated **Schema Compatibility Graph Builder $\mathcal{G}(\mathcal{T}, \mathcal{E})$** & 1-hop bridge retriever across all 8,000+ Python APIs.
+  2. **Adaptive DAG Controller** with structured Cross-Source Entity Scratchpad $\mathcal{M}_k$.
+  3. **Pre/Post-Execution Policy Entailment Verifier** & backtracking controller.
 
 ---
 
-## Slide 7: Datasets & Quantitative Evaluation Metrics (8:15 – 10:00)
-* **Dataset (`ibm-research/VAKRA`):**
-  * **8,000+ executable Python APIs** across **62 enterprise domains** (derived from BIRD-SQL, Live API-Bench, Wikidata5M).
-  * **Aligned Document Collections** (ClapNQ + enterprise docs).
-  * **664 Multi-Hop Multi-Source Queries** (420 unconstrained + 244 policy-constrained, 90% IAA).
-* **Quantitative Evaluation Metrics:**
-  1. **Trajectory Execution Accuracy (`Exec-Acc`):** Live database/retrieval state equivalence via VAKRA's replay engine.
+## Slide 7: Evaluation Benchmark (VAKRA) & Quantitative Metrics (8:15 – 10:00)
+* **Evaluation Benchmark (`ibm-research/VAKRA`):** $8,000+$ Python APIs, $62$ domains, aligned RAG corpora, and $664$ multi-source queries ($420$ unconstrained + $244$ policy-constrained).
+* **Quantitative Metrics:**
+  1. **Trajectory Execution Accuracy (`Exec-Acc`)** via live database/RAG replay.
   2. **Final Answer Accuracy & Token-Level F1.**
-  3. **Tool Selection Recall@$K$ & F1** (Subtask 2, out of 150+ tools per slice).
-  4. **Policy Compliance Rate & Abstention F1** (Subtask 4, targeting the **2.4%** baseline bottleneck).
-  5. **Efficiency:** Average tool calls and token cost per solved trajectory.
+  3. **Tool Selection Recall@$K$ & F1** (Subtask 2).
+  4. **Policy Compliance Rate & Abstention F1** (Task 2, targeting the **2.4%** baseline bottleneck).
+  5. **Efficiency:** Avg. API calls & tokens per solved trajectory.

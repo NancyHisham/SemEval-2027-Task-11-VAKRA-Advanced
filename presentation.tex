@@ -28,7 +28,7 @@
 \setbeamercolor{block title example}{bg=darkgreen, fg=white}
 \setbeamercolor{block body example}{bg=green!6, fg=black}
 
-\title[SemEval-2027 Task 11: PV-VAKRA]{\textbf{Plan-and-Verify Agent with Schema-Grounded Tool Retrieval and Policy Guardrails for VAKRA-Advanced}}
+\title[SemEval-2027 Task 11: PV-VAKRA Agent]{\textbf{Building a Plan-and-Verify Agent with Schema-Grounded Tool Retrieval and Policy Guardrails for VAKRA-Advanced}}
 \subtitle{SemEval-2027 Task 11 --- Course Project Proposal Discussion}
 \author[Team Members]{\textbf{Team Member 1 Name} \quad \& \quad \textbf{Team Member 2 Name}}
 \institute[Advanced NLP]{
@@ -47,32 +47,40 @@
 \end{frame}
 
 % ============================================================================
-% SLIDE 2: PRESENTATION ROADMAP & THE PROBLEM
+% SLIDE 2: THE PROBLEM (SOLVING THE 2 CORE MULTI-HOP TASKS)
 % ============================================================================
-\begin{frame}{1. The Problem: SemEval-2027 Task 11 (VAKRA-Advanced)}
+\begin{frame}{1. The Problem: Building an Agent for VAKRA-Advanced}
 \begin{columns}[T, onlytextwidth]
 \begin{column}{0.53\textwidth}
-\begin{block}{\small What is VAKRA-Advanced?}
+\begin{block}{\small Our Objective in SemEval-2027 Task 11}
 \footnotesize
-Evaluating AI agents on \textbf{multi-hop, multi-source tool-calling} in realistic, \textbf{executable enterprise environments} ($8,000+$ live APIs across $62$ domains + RAG corpora).
+Design and build an autonomous \textbf{tool-calling agent (\texttt{PV-VAKRA})} that solves two core multi-hop reasoning tasks and is evaluated on the \textbf{VAKRA benchmark} ($8,000+$ live Python APIs across $62$ domains + RAG corpora).
 \end{block}
-\vspace{0.05cm}
-{\footnotesize \textbf{Four Progressive Subtasks We Address:}
+\vspace{0.04cm}
+{\footnotesize \textbf{Two Core Tasks Solved by Our Agent:}
 \begin{enumerate}
-    \setlength{\itemsep}{1pt}
-    \item \textbf{Subtask 1 (API Chaining):} Sequential \& nested API composition.
-    \item \textbf{Subtask 2 (Tool Selection):} Selecting gold APIs from $150+$ candidates per domain slice.
-    \item \textbf{Subtask 3 (Multi-Hop API Reasoning):} $3\text{--}7$ dependent hops where hop-$k$ outputs parameterize hop-$(k+1)$.
-    \item \textbf{Subtask 4 (Multi-Hop, Multi-Source + Policies):} Combining structured APIs + unstructured document RAG under strict \textbf{natural-language tool-use policies}.
+    \setlength{\itemsep}{2pt}
+    \item \textbf{Task 1: Multi-Hop Structured API Reasoning}
+    \begin{itemize}
+        \scriptsize
+        \item \textit{Subtask 1 (API Chaining):} Sequential \& nested BI API calls.
+        \item \textit{Subtask 2 (Tool Selection):} Selecting gold APIs from $150+$ candidates.
+        \item \textit{Subtask 3 (Multi-Hop API):} $3\text{--}7$ dependent hops passing JSON outputs as downstream arguments.
+    \end{itemize}
+    \item \textbf{Task 2: Multi-Hop, Multi-Source Reasoning under Policies}
+    \begin{itemize}
+        \scriptsize
+        \item \textit{Subtask 4:} Combining structured APIs + unstructured document RAG under strict \textbf{natural-language tool-use policies}.
+    \end{itemize}
 \end{enumerate}}
 \end{column}
 
 \begin{column}{0.44\textwidth}
-\begin{alertblock}{\small Motivating Example (Subtask 4)}
+\begin{alertblock}{\small Concrete Agent Execution Example (Task 2)}
 \scriptsize
 \textbf{User Query $q$:} \textit{``What is the Q3 reimbursement approved for the lead auditor named in the 2025 Compliance Memo, and their department's remaining budget?''}\\[0.25em]
 \textbf{Policy $\mathcal{P}$:} \textit{``Do not access personal HR-Payroll endpoints; if required, abstain and cite policy.''}\\[0.25em]
-\textbf{Required Multi-Source Chain:}
+\textbf{Required Agent Trajectory $\tau$:}
 \begin{itemize}
     \setlength{\itemsep}{1pt}
     \item \textbf{Hop 1 (RAG):} Retrieve \textit{2025 Compliance Memo} $\rightarrow$ extracts \texttt{"Dr.\ E.\ Vance"}.
@@ -85,45 +93,44 @@ Evaluating AI agents on \textbf{multi-hop, multi-source tool-calling} in realist
 \end{frame}
 
 % ============================================================================
-% SLIDE 3: BRIEF SUMMARY OF THE BASELINE PAPER (VAKRA)
+% SLIDE 3: BRIEF SUMMARY OF THE BASELINE PAPER (VAKRA REACT AGENT)
 % ============================================================================
-\begin{frame}{2. Baseline Paper Summary: VAKRA (Naik et al., IBM Research 2026)}
-{\footnotesize \textbf{Paper:} \textit{VAKRA: Evaluating Multi-Hop Reasoning Across APIs and Retrieval Under Tool-Use Policies} (\texttt{arXiv:2608.12282})}
+\begin{frame}{2. Baseline Paper Summary: VAKRA ReAct Agent (Naik et al., 2026)}
+{\footnotesize \textbf{Baseline Paper:} \textit{VAKRA: Evaluating Multi-Hop Reasoning Across APIs and Retrieval Under Tool-Use Policies} (\texttt{arXiv:2608.12282})}
 
 \vspace{0.08cm}
 \begin{columns}[T, onlytextwidth]
 \begin{column}{0.51\textwidth}
-\begin{block}{\small Core Contributions of VAKRA}
+\begin{block}{\small Baseline ReAct Agent \& Replay Evaluator}
 \scriptsize
 \begin{itemize}
     \setlength{\itemsep}{2pt}
-    \item \textbf{Executable Benchmark:} $8,000+$ locally hosted Python APIs across $62$ domains + aligned document collections.
-    \item \textbf{Trace-Level Replay Verification:} Replays predicted tool trajectory $\tau = \langle (t_1, a_1, o_1), \dots, (t_K, a_K, o_K), \hat{y}\rangle$ against live databases to handle multiple valid paths:
+    \item \textbf{Official Baseline Agent:} Uses a greedy \textbf{ReAct} loop ($\text{Thought}_k \rightarrow \text{Action}(t_k, a_k) \rightarrow \text{Observation}(o_k)$) paired with dense tool/document retrieval and system-prompt policy conditioning.
+    \item \textbf{Trace-Level Replay Evaluator:} Re-executes the agent's predicted trajectory $\tau$ against live backend databases to verify state equivalence and policy adherence:
     $$\text{Score}(\tau) = \mathbb{I}[\text{State}(\tau)\equiv\text{State}(\tau^*)] \cdot \mathbb{I}[\tau \models \mathcal{P}] \cdot \text{Acc}(\hat{y}, y^*)$$
-    \item \textbf{Standardized ReAct Baseline:} Evaluates frontier \& open-weight LLMs in a fixed greedy ReAct harness.
 \end{itemize}
 \end{block}
 \end{column}
 
 \begin{column}{0.46\textwidth}
-\begin{alertblock}{\small Empirical Bottlenecks in Baseline ReAct}
+\begin{alertblock}{\small Why the Baseline ReAct Agent Fails}
 \scriptsize
 \begin{tabularx}{\textwidth}{X r}
 \toprule
-\textbf{Evaluation Setting} & \textbf{Best ReAct Acc.} \\
+\textbf{VAKRA Task Setting} & \textbf{ReAct Baseline Acc.} \\
 \midrule
 Single-Hop Query-Aligned APIs & \textbf{70.4\%} \\
-Compositional BI APIs & \textbf{50.0\%--51.0\%} \\
-Multi-Hop Chains ($3\text{--}7$ Hops) & \textbf{$>$50\% Drop} \\
-Policy-Constrained Unanswerable & \textcolor{darkred}{\textbf{2.4\%}} \\
+Compositional BI APIs (Chaining) & \textbf{50.0\%--51.0\%} \\
+Task 1: Multi-Hop APIs ($3\text{--}7$ Hops) & \textbf{$>$50\% Drop} \\
+Task 2: Policy Unanswerable Queries & \textcolor{darkred}{\textbf{2.4\%}} \\
 \bottomrule
 \end{tabularx}
 \vspace{0.08cm}
-\textbf{Why ReAct Fails:}
+\textbf{Three Architectural Flaws of Baseline ReAct:}
 \begin{enumerate}
     \setlength{\itemsep}{1pt}
+    \item \textbf{No Bridge-Tool Lookahead} across $3\text{--}7$ hops
     \item \textbf{Cross-Source Entity Mismatch} (RAG text vs.\ SQL IDs)
-    \item \textbf{Bridge Tool Selection Misses} across $3\text{--}7$ hops
     \item \textbf{Policy Forgetting} over long JSON contexts
 \end{enumerate}
 \end{alertblock}
@@ -132,42 +139,42 @@ Policy-Constrained Unanswerable & \textcolor{darkred}{\textbf{2.4\%}} \\
 \end{frame}
 
 % ============================================================================
-% SLIDE 4: CONCISE SOTA SURVEY (6 RECENT PAPERS)
+% SLIDE 4: CONCISE SOTA SURVEY OF 6 AGENT ARCHITECTURES
 % ============================================================================
-\begin{frame}{3. Concise SOTA Survey \& Research Gap (2024--2026)}
+\begin{frame}{3. Concise SOTA Survey of Tool-Calling Agent Architectures}
 \tiny
 \renewcommand{\arraystretch}{1.15}
-\begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{2.2cm} >{\raggedright\arraybackslash}p{3.4cm} >{\raggedright\arraybackslash}p{2.6cm} >{\raggedright\arraybackslash}X}
+\begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{2.2cm} >{\raggedright\arraybackslash}p{3.5cm} >{\raggedright\arraybackslash}p{2.4cm} >{\raggedright\arraybackslash}X}
 \toprule
-\textbf{Paper / Venue} & \textbf{Core Method} & \textbf{Dataset \& Scale} & \textbf{Key Limitation / Unresolved Issue} \\
+\textbf{Agent / Method} & \textbf{Core Agent Architecture} & \textbf{Evaluated Benchmarks} & \textbf{Key Architectural Limitation on Tasks 1 \& 2} \\
 \midrule
-\textbf{VAKRA} (Naik et al., 2026) & Greedy ReAct over structured APIs + RAG corpus & $8,000+$ live APIs, $62$ domains, $664$ multi-source queries & $>50\%$ drop on $3\text{--}7$ hops; no active policy verifier ($2.4\%$ on unanswerable policy queries). \\
+\textbf{ReAct Baseline} (Yao 23; Naik 26) & Greedy interleaved Thought $\rightarrow$ Action $\rightarrow$ Observation + prompt policy & \textbf{VAKRA} ($8,000+$ APIs, $62$ domains, $664$ multi-source) & Myopic 1-step horizon ($>50\%$ drop on $3\text{--}7$ hops); passive prompt policy fails ($2.4\%$ on unanswerable policy queries). \\
 \midrule
-\textbf{Live API-Bench} (Elder et al., EACL 2026) & ReAct / Function-calling over SLOT, SEL, REST styles & $2,500+$ live APIs across $11$ BIRD-SQL domains & Low completion ($7\%\text{--}50\%$); structured APIs only (no RAG documents or tool-use policies). \\
+\textbf{ToolLLM (DFSDT)} (Qin et al., ICLR 2024) & Contrastive Dense API Retriever + Depth-First Search Decision Tree (DFSDT) & \textbf{ToolBench} ($16,464$ REST APIs), APIBench & Flat dense retriever misses intermediate bridge tools; no cross-source entity linking between RAG text and SQL APIs. \\
 \midrule
-\textbf{ToolLLM} (Qin et al., ICLR 2024) & Dense API Retriever + Depth-First Search Decision Tree (DFSDT) & \textbf{ToolBench}: $16,464$ RapidAPI endpoints & Flat retriever misses intermediate bridge tools; high token overhead in unconstrained DFS. \\
+\textbf{AnyTool} (Du et al., ICML 2024) & 3-Tier Hierarchical Category$\rightarrow$Tool Agent + Self-Reflective Solver & \textbf{AnyToolBench} \& ToolBench ($16,000+$ APIs) & High multi-agent latency; self-reflection checks final answer completeness but does not enforce pre-execution policies. \\
 \midrule
-\textbf{AnyTool} (Du et al., ICML 2024) & Hierarchical Category$\rightarrow$Tool Retriever + Self-Reflection & \textbf{AnyToolBench}: $16,000+$ RapidAPI endpoints & High multi-agent latency; lacks entity resolution between RAG text and SQL database keys. \\
+\textbf{ReWOO} (Xu et al., 2023/2024) & Decoupled Planner (symbolic DAG \texttt{\#E1}$\rightarrow$\texttt{\#E2}) + Worker + Solver & HotpotQA, TriviaQA, Multi-Step Tool QA & Open-loop static DAG breaks when an intermediate RAG output requires dynamic entity disambiguation or fallback. \\
 \midrule
-\textbf{$\tau$-bench} (Yao et al., 2024) & ReAct / Function-Calling under domain rule docs & Airline \& Retail DB tools + policy documents & Small toolset ($<20$ tools); does not scale to $8,000+$ APIs or cross-source RAG chaining. \\
+\textbf{LATS} (Zhou et al., ICML 2024) & Monte Carlo Tree Search (MCTS) + LLM Value Function + Reflection & HotpotQA, WebShop, Programming tasks & Prohibitive inference cost ($10\text{--}30\times$ rollouts per query); does not model API I/O schema compatibility graphs. \\
 \midrule
-\textbf{Gorilla} (NeurIPS 24) \& \textbf{Re-Invoke} (EMNLP 24) & Synthetic query rewriting + Retriever-aware fine-tuning & \textbf{BFCL / ToolBench}: $1,600\text{--}16,000$ APIs & Optimizes single-turn tool selection; does not track entity state across $3\text{--}7$ dependent hops. \\
+\textbf{Re-Invoke} (EMNLP 24) \& \textbf{Gorilla} (NeurIPS 24) & Synthetic query-enriched indexing + Multi-intent query decomposition & ToolBench, ToolE, BFCL ($1.6\text{k}\text{--}16\text{k}$ APIs) & Retrieves tools matching explicit prompt sub-queries, missing implicit bridge APIs whose schemas connect hop $k$ to $k+1$. \\
 \bottomrule
 \end{tabularx}
 
 \vspace{0.08cm}
-\begin{exampleblock}{\scriptsize Three Unresolved Gaps Addressed by Our Project}
+\begin{exampleblock}{\scriptsize How Our Proposed Agent (\texttt{PV-VAKRA}) Advances Beyond SOTA Agents}
 \scriptsize
-\textbf{(1) Multi-Hop Bridge Retrieval:} Query similarity misses intermediate APIs $t_2$ in $t_1 \rightarrow t_2 \rightarrow t_3$ that only match via \textit{I/O schema types}. \quad
-\textbf{(2) Cross-Source Entity Grounding:} Mapping unstructured RAG mentions to canonical DB keys. \quad
-\textbf{(3) Active Policy Guardrails.}
+\textbf{(1) Schema-Graph Bridge Retrieval:} Finds intermediate APIs $t_2$ in $t_1 \rightarrow t_2 \rightarrow t_3$ via \textit{I/O schema compatibility}. \quad
+\textbf{(2) Adaptive DAG + Entity Scratchpad:} Resolves RAG text mentions to canonical SQL IDs. \quad
+\textbf{(3) Pre-Execution Policy Guardrail.}
 \end{exampleblock}
 \end{frame}
 
 % ============================================================================
-% SLIDE 5: OUR CORE IDEA (PV-VAKRA ARCHITECTURE)
+% SLIDE 5: OUR CORE IDEA (PV-VAKRA AGENT ARCHITECTURE)
 % ============================================================================
-\begin{frame}{4. Our Proposed Idea: PV-VAKRA (Plan-and-Verify Agent)}
+\begin{frame}{4. Our Proposed Agent Architecture: PV-VAKRA}
 \begin{center}
 \begin{tikzpicture}[
     node distance=0.45cm and 0.55cm,
@@ -175,15 +182,15 @@ Policy-Constrained Unanswerable & \textcolor{darkred}{\textbf{2.4\%}} \\
     guard/.style={rectangle, rounded corners=4pt, draw=darkred, fill=red!8, very thick, minimum height=1.35cm, align=center, font=\scriptsize},
     arrow/.style={-Stealth, very thick, draw=navyblue}
 ]
-\node[box, text width=3.0cm] (q) {\textbf{Stage 1: Query \& Policy}\\\textbf{Decomposer}\\Sub-goals $\{q_1..q_m\}$\\Policy rules $\{c_1..c_L\}$};
-\node[box, text width=3.3cm, right=of q] (ret) {\textbf{Stage 2: Schema-Graph}\\\textbf{Hybrid Retriever}\\BM25 + Dense + 1-Hop\\Bridge Graph $\mathcal{G}(\mathcal{T},\mathcal{E})$};
-\node[box, text width=3.3cm, right=of ret] (plan) {\textbf{Stage 3: Entity-Grounded}\\\textbf{DAG Executor}\\Structured Scratchpad $\mathcal{M}_k$\\(RAG Entity $\rightarrow$ DB ID)};
-\node[guard, text width=3.2cm, right=of plan] (pol) {\textbf{Stage 4: Policy \& Schema}\\\textbf{Guardrail Verifier}\\Check $(t_k, a_k) \models \mathcal{P}$\\Backtrack or Abstain};
+\node[box, text width=3.0cm] (q) {\textbf{Module 1: Intent \& Policy}\\\textbf{Decomposer}\\Sub-goals $\{q_1..q_m\}$\\Policy rules $\{c_1..c_L\}$};
+\node[box, text width=3.3cm, right=of q] (ret) {\textbf{Module 2: Schema-Graph}\\\textbf{Hybrid Tool Retriever}\\BM25 + Dense + 1-Hop\\Bridge Graph $\mathcal{G}(\mathcal{T},\mathcal{E})$};
+\node[box, text width=3.3cm, right=of ret] (plan) {\textbf{Module 3: Entity-Grounded}\\\textbf{Adaptive DAG Executor}\\Structured Scratchpad $\mathcal{M}_k$\\(RAG Entity $\rightarrow$ DB ID)};
+\node[guard, text width=3.2cm, right=of plan] (pol) {\textbf{Module 4: Policy \& Schema}\\\textbf{Guardrail Verifier}\\Check $(t_k, a_k) \models \mathcal{P}$\\Backtrack or Abstain};
 
 \draw[arrow] (q) -- (ret);
 \draw[arrow] (ret) -- (plan);
 \draw[arrow] (plan) -- (pol);
-\draw[arrow, dashed, draw=darkred, bend left=20] (pol.south) to node[below, font=\scriptsize\bfseries, text=darkred] {Reject Violation / Backtrack ($B \le 2$) / Refine Entity ID} (plan.south);
+\draw[arrow, dashed, draw=darkred, bend left=20] (pol.south) to node[below, font=\scriptsize\bfseries, text=darkred] {Reject Violation / Local Backtrack ($B \le 2$) / Refine Entity ID} (plan.south);
 \end{tikzpicture}
 \end{center}
 \vspace{-0.15cm}
@@ -191,13 +198,13 @@ Policy-Constrained Unanswerable & \textcolor{darkred}{\textbf{2.4\%}} \\
 \begin{column}{0.32\textwidth}
 \begin{block}{\footnotesize 1. Schema Compatibility Graph}
 \scriptsize
-Offline parsing of $8,000+$ API docstrings builds directed graph $\mathcal{G}(\mathcal{T}, \mathcal{E})$ where $(t_i \rightarrow t_j) \in \mathcal{E}$ if output schema of $t_i$ matches input parameter type of $t_j$. Recovers hidden bridge APIs!
+Offline parsing of $8,000+$ API docstrings builds directed graph $\mathcal{G}(\mathcal{T}, \mathcal{E})$ where $(t_i \rightarrow t_j) \in \mathcal{E}$ if output schema of $t_i$ matches input parameter type of $t_j$. Recovers hidden bridge APIs for Task 1!
 \end{block}
 \end{column}
 \begin{column}{0.32\textwidth}
 \begin{block}{\footnotesize 2. Entity Grounding Scratchpad}
 \scriptsize
-Maintains structured state $\mathcal{M}_k = \{(\text{mention}, \text{canonical\_id}, \text{source}, \text{type})\}$. Forces lookup API resolution when transferring entities from RAG text to SQL APIs.
+Maintains structured memory $\mathcal{M}_k = \{(\text{mention}, \text{id}, \text{source}, \text{type})\}$. Forces lookup API resolution when transferring entities from RAG text to SQL APIs in Task 2.
 \end{block}
 \end{column}
 \begin{column}{0.32\textwidth}
@@ -212,7 +219,7 @@ Evaluates entailment $P_{\text{verify}}(\mathcal{P} \models \neg(t_k, a_k))$ \te
 % ============================================================================
 % SLIDE 6: TECHNIQUES & MODELS TO BE USED
 % ============================================================================
-\begin{frame}{5. Techniques \& Neural Models to Be Used}
+\begin{frame}{5. Techniques \& Neural Models Used in Our Agent}
 \begin{columns}[T, onlytextwidth]
 \begin{column}{0.51\textwidth}
 \begin{block}{Neural Models \& Mathematical Formulation}
@@ -232,18 +239,18 @@ Evaluates entailment $P_{\text{verify}}(\mathcal{P} \models \neg(t_k, a_k))$ \te
 \end{column}
 
 \begin{column}{0.46\textwidth}
-\begin{exampleblock}{Downloaded vs.\ Implemented by Us}
+\begin{exampleblock}{Downloaded vs.\ Implemented by Our Team}
 \footnotesize
 \textbf{Downloaded / Existing Components:}
 \begin{itemize}
-    \item Official \texttt{IBM/vakra} execution harness, SQLite DBs, and ReAct baseline.
+    \item Official \texttt{IBM/vakra} benchmark environment, SQLite DBs, evaluator, and ReAct baseline agent.
     \item Pretrained checkpoints (\texttt{Qwen2.5}, \texttt{Llama-3.3}, \texttt{bge-large}, \texttt{bge-reranker}).
 \end{itemize}
 \vspace{0.15cm}
-\textbf{Original Modules Implemented From Scratch:}
+\textbf{Original Agent Modules Implemented From Scratch:}
 \begin{enumerate}
-    \item \textbf{API Compatibility Graph Builder $\mathcal{G}(\mathcal{T}, \mathcal{E})$} \& $1$-hop bridge expansion retriever.
-    \item \textbf{Entity-Grounded DAG Controller} with structured cross-source scratchpad $\mathcal{M}_k$.
+    \item \textbf{Schema Compatibility Graph Builder $\mathcal{G}(\mathcal{T}, \mathcal{E})$} \& $1$-hop bridge expansion retriever.
+    \item \textbf{Adaptive DAG Controller} with structured Cross-Source Entity Scratchpad $\mathcal{M}_k$.
     \item \textbf{Pre/Post-Execution Policy Verifier} with local backtracking ($B \le 2$ retries) and calibrated abstention threshold $\tau_{\text{safe}}$.
 \end{enumerate}
 \end{exampleblock}
@@ -254,44 +261,43 @@ Evaluates entailment $P_{\text{verify}}(\mathcal{P} \models \neg(t_k, a_k))$ \te
 % ============================================================================
 % SLIDE 7: DATASETS & QUANTITATIVE EVALUATION METRICS
 % ============================================================================
-\begin{frame}{6. Dataset(s) \& Quantitative Performance Evaluation Metrics}
+\begin{frame}{6. Evaluation Dataset (VAKRA) \& Quantitative Performance Metrics}
 \begin{columns}[T, onlytextwidth]
 \begin{column}{0.46\textwidth}
-\begin{block}{VAKRA Benchmark Dataset (\texttt{ibm-research/VAKRA})}
+\begin{block}{Evaluation Benchmark (\texttt{ibm-research/VAKRA})}
 \footnotesize
 \begin{itemize}
-    \item \textbf{Executable APIs:} \textbf{8,000+ Python functions} across \textbf{62 enterprise domains} (adapted from BIRD-SQL, Live API-Bench, Wikidata5M).
+    \item \textbf{Executable APIs:} \textbf{8,000+ Python functions} across \textbf{62 enterprise domains} backed by local SQLite databases.
     \item \textbf{Unstructured Corpora:} Domain-aligned document collections (ClapNQ + enterprise docs) for RAG.
-    \item \textbf{Task Splits:}
+    \item \textbf{Evaluation Splits for Our Agent:}
     \begin{itemize}
         \footnotesize
-        \item \textit{Subtasks 1 \& 2:} Single-hop \& Compositional BI API slices ($150+$ candidate tools per domain slice).
-        \item \textit{Subtask 3:} Multi-Hop Structured API chains ($2\text{--}7$ hops).
-        \item \textit{Subtask 4:} \textbf{664 Multi-Source Samples} (\textbf{420} unconstrained + \textbf{244} policy-constrained; $90\%$ IAA, $96\%$ high-quality human validation).
+        \item \textit{Task 1 (Structured APIs):} Single-hop \& Compositional BI API chaining slices ($150+$ candidate tools per slice) + Multi-Hop API chains ($2\text{--}7$ hops).
+        \item \textit{Task 2 (Multi-Source + Policies):} \textbf{664 Multi-Source Queries} (\textbf{420} unconstrained + \textbf{244} policy-constrained).
     \end{itemize}
 \end{itemize}
 \end{block}
 \end{column}
 
 \begin{column}{0.51\textwidth}
-\begin{alertblock}{Quantitative Evaluation Metrics \& Baseline Targets}
+\begin{alertblock}{Quantitative Metrics \& Baseline Scores to Beat}
 \footnotesize
 \begin{enumerate}
     \item \textbf{Trajectory Execution Accuracy (\texttt{Exec-Acc}):}
-    Deterministic replay match of live DB and retrieval states against reference execution graphs.
+    Deterministic replay match of our agent's live DB and retrieval states against reference execution graphs.
     \item \textbf{Final Answer Accuracy \& Token-Level F1:}
     Exact match and F1 on synthesized final responses.
     \item \textbf{Tool Selection Recall@$K$ \& F1 (Subtask 2):}
     Accuracy of retrieving gold APIs from $150+$ domain candidates.
-    \item \textbf{Policy Compliance Rate \& Abstention F1 (Subtask 4):}
+    \item \textbf{Policy Compliance Rate \& Abstention F1 (Task 2):}
     Correctly blocking restricted tools and abstaining on unanswerable queries ($244$ policy samples).
     \item \textbf{Efficiency Metrics:} Avg.\ API calls \& tokens per trajectory.
 \end{enumerate}
 \vspace{0.05cm}
-\textbf{Published Baseline Scores to Beat (Naik et al., 2026):}
+\textbf{Published ReAct Baseline Scores We Aim to Beat:}
 \begin{itemize}
     \scriptsize
-    \item Single-Hop: \textbf{70.4\%} $\rightarrow$ Compositional BI: \textbf{50--51\%} $\rightarrow$ Unanswerable Policy: \textbf{2.4\%} (Target: $>60\%$ via Policy Verifier).
+    \item Single-Hop: \textbf{70.4\%} $|$ Compositional BI: \textbf{50--51\%} $|$ Unanswerable Policy: \textbf{2.4\%} (Our Target: $>60\%$ via Policy Verifier).
 \end{itemize}
 \end{alertblock}
 \end{column}
@@ -308,13 +314,12 @@ Evaluates entailment $P_{\text{verify}}(\mathcal{P} \models \neg(t_k, a_k))$ \te
 {\Large \textcolor{navyblue}{\textbf{Questions \& Discussion (5 Minutes)}}}\\[0.8cm]
 
 \begin{columns}[T, onlytextwidth]
-\begin{column}{0.85\textwidth}
+\begin{column}{0.88\textwidth}
 \centering
 \begin{block}{\centering Project Summary}
 \footnotesize
-\textbf{Task:} SemEval-2027 Task 11 (VAKRA-Advanced) --- All 4 Subtasks ($8,000+$ APIs, $62$ Domains)\\
-\textbf{Core Innovation:} \textbf{PV-VAKRA} (Schema-Graph Hybrid Retrieval + Cross-Source Entity Scratchpad + Pre-Execution Policy Guardrail Verifier)\\
-\textbf{Key Goal:} Overcome ReAct's $>50\%$ multi-hop degradation and $2.4\%$ policy-constrained bottleneck.
+\textbf{Goal:} Build the \textbf{PV-VAKRA Agent} to solve Task 1 (Multi-Hop Structured APIs) \& Task 2 (Multi-Hop Multi-Source + Policies) and evaluate on the \textbf{VAKRA Benchmark} ($8,000+$ APIs, $62$ Domains).\\
+\textbf{Core Agent Innovations:} Schema-Graph Bridge Retrieval + Adaptive DAG with Cross-Source Entity Scratchpad + Pre-Execution Policy Guardrail Verifier.
 \end{block}
 \end{column}
 \end{columns}
